@@ -81,7 +81,7 @@ def get_id(x,y,barcode):
     return present
     '''
 # retrieves GenBank data from NCBI website: accession ID, protein seq, and gene name
-def parse(accession, filetype): # filetype can be 'gb' or 'fasta'
+def ncbi(accession, filetype): # filetype can be 'gb' or 'fasta'
     Entrez.email = "aaronkgupta@gmail.com"
     handle = Entrez.efetch(db="nucleotide", id = accession, rettype = filetype, retmode="text")
     seq_record = SeqIO.read(handle,'gb') # genbank format
@@ -133,25 +133,23 @@ def writefile(orf, rnaseq, ids, seqs, symbols,rnas):
             j+=1
 
 
-'''
-csv_from_excel('ORF program.xls','ORF','RNAseq','ORF.csv','RNAseq.csv')
-hits, barcodes = get_hits('ORF.csv')
+# TEST CASE
+
+csv_from_excel('ORF program.xls','ORF','RNAseq','ORF.csv','RNAseq.csv') # turns sheets in separate csvs
+hits, barcodes = get_hits('ORF.csv') # extract hits and barcodes
 # fills input data for writefile()
+'''
 ids = []
 seqs = []
 symbols = []
-for i in range(0,len(hits)):
+for i in range(0,len(hits)): # loop through to get all accession ids, seqs, and symbols from NCBI
     a = hits[i].split('-')
-    ids.append(parse(get_id(a[0],a[1],barcodes[i]),'gb')[0])
-    seqs.append(parse(get_id(a[0],a[1],barcodes[i]),'gb')[1])
-    symbols.append(parse(get_id(a[0],a[1],barcodes[i]),'gb')[2])
+    ids.append(ncbi(get_id(a[0],a[1],barcodes[i]),'gb')[0])
+    seqs.append(ncbi(get_id(a[0],a[1],barcodes[i]),'gb')[1])
+    symbols.append(ncbi(get_id(a[0],a[1],barcodes[i]),'gb')[2])
 '''
 symbols =['Ap1b1','Ap2a2','Aox1']
-rnas = get_rnaseq('rnaseq.csv',symbols)
+rnas = get_rnaseq('rnaseq.csv',symbols) # get those hits that have high enough expression (>1)
 ids = ['A','B','C']
 seqs = ['gg','cc','aa']
-writefile('ORF.csv','RNAseq.csv',ids,seqs,symbols,rnas)
-
-#get_id(0,0,0)
-#handle = parse('BC011922','gb') # sample case
-#print handle
+writefile('ORF.csv','RNAseq.csv',ids,seqs,symbols,rnas) # write all gathered data to new xlsx file
