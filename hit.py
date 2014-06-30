@@ -13,6 +13,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import TimeoutException
 import xlsxwriter
+import json
+import urllib2
 
 # converts each sheet in ORF.xls to a separate .csv
 def csv_from_excel(ixls,sheet1,sheet2, ocsv1, ocsv2):
@@ -50,12 +52,44 @@ def get_hits(orf):
 
 # gets NCBI accession ID from NAR website/xls (if available)
 def get_id(x,y,barcode):
+    '''
+    data = json.load(urllib2.urlopen('http://research.gene.com/nar/isomorphic/IDACall?isc_rpc=1&isc_v=9.0a&isc_xhr=1'))
+
+    #print data
+    '''
+    url = 'http://research.gene.com/nar/isomorphic/IDACall?isc_rpc=1&isc_v=9.0a&isc_xhr=1'
+    r = requests.get(url, auth=('guptaa22', 'Scissor1'))
+    print r.status_code
+    print r.headers['content-type']
+    print r.encoding
+    print r.text
+    print r.json
+    print r.content
+    try:
+        print r.json()
+    except ValueError:
+        print 'no json'
+    '''
+    
+    url = 'http://research.gene.com/nar/isomorphic/IDACall?isc_rpc=1&isc_v=9.0a&isc_xhr=1'
+    username = 'guptaa22'
+    password = 'Scissor1'
+    p = urllib2.HTTPPasswordMgrWithDefaultRealm()
+
+    p.add_password(None, url, username, password)
+
+    handler = urllib2.HTTPBasicAuthHandler(p)
+    opener = urllib2.build_opener(handler)
+    urllib2.install_opener(opener)
+
+    data = json.load(urllib2.urlopen(url))
+    print data
     
     accession = ''
-    r = requests.get('http://research.gene.com/nar',auth=HTTPBasicAuth('guptaa22','Scissor1')).text
+    r = requests.get('guptaa22:Scissor1@http://research.gene.com/nar',auth=HTTPBasicAuth('guptaa22','Scissor1')).text
     print r
 	#find tag in html and return accession
-    '''
+    
     url = 'guptaa22:Scissor1@http://research.gene.com/nar/'
     #url = 'google.com'
     xpath = '//*[@id="isc_O"]/table/tbody/tr/td/table/tbody/tr/td[2]'
@@ -134,11 +168,11 @@ def writefile(orf, rnaseq, ids, seqs, symbols,rnas):
 
 
 # TEST CASE
-
+'''
 csv_from_excel('ORF program.xls','ORF','RNAseq','ORF.csv','RNAseq.csv') # turns sheets in separate csvs
 hits, barcodes = get_hits('ORF.csv') # extract hits and barcodes
 # fills input data for writefile()
-'''
+
 ids = []
 seqs = []
 symbols = []
@@ -147,9 +181,12 @@ for i in range(0,len(hits)): # loop through to get all accession ids, seqs, and 
     ids.append(ncbi(get_id(a[0],a[1],barcodes[i]),'gb')[0])
     seqs.append(ncbi(get_id(a[0],a[1],barcodes[i]),'gb')[1])
     symbols.append(ncbi(get_id(a[0],a[1],barcodes[i]),'gb')[2])
-'''
+
 symbols =['Ap1b1','Ap2a2','Aox1']
 rnas = get_rnaseq('rnaseq.csv',symbols) # get those hits that have high enough expression (>1)
 ids = ['A','B','C']
 seqs = ['gg','cc','aa']
 writefile('ORF.csv','RNAseq.csv',ids,seqs,symbols,rnas) # write all gathered data to new xlsx file
+'''
+
+get_id(0,0,0)
