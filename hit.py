@@ -48,72 +48,73 @@ def get_hits(orf):
 			if row[3] != "":
 				hits.append(row[3].strip())
 				barcodes.append(row[2].strip())
-	return hits, barcodes
+	return hits, barcodes # separate arrays with coordinates and barcodes
 
-# gets NCBI accession ID from NAR website/xls (if available)
-def get_id(x,y,barcode):
-    '''
-    data = json.load(urllib2.urlopen('http://research.gene.com/nar/isomorphic/IDACall?isc_rpc=1&isc_v=9.0a&isc_xhr=1'))
+def convert_coordinate(s):
+    a = ['A','B','C','D','E','F','G','H']
+    row = a.index(s[0])
+    col = ''
+    if s[1] == '0':
+        col = s[2]
+    else:
+        col = s[1:3]
+    return str(col)+'-'+str(row)
 
-    #print data
-    '''
-    url = 'http://research.gene.com/nar/isomorphic/IDACall?isc_rpc=1&isc_v=9.0a&isc_xhr=1'
-    r = requests.get(url, auth=('guptaa22', 'Scissor1'))
-    print r.status_code
-    print r.headers['content-type']
-    print r.encoding
-    print r.text
-    print r.json
-    print r.content
+def get_dnaids(hits, barcodes):
+    dnaids = []
+    with open('Plate map NK.csv', 'rU') as file:
+        reader = csv.reader(file)
+        arr = []
+        for i in range(0,len(hits)):
+            for row in reader:
+                print row[2].strip()
+                hit = convert_coordinate(row[2].strip())
+                if row[1].strip() == barcodes[i] and hit == hits[i]:
+                    dnaids.append(row[4])
+    return dnaids
+
+
+
+def retrieve_annotation(id_list):
+    
+    """Annotates Entrez Gene IDs using Bio.Entrez, in particular epost (to
+        submit the data to NCBI) and esummary to retrieve the information.
+        Returns a list of dictionaries with the annotations."""
+    
+    request = Entrez.epost("gene",id=",".join(id_list))
     try:
-        print r.json()
-    except ValueError:
-        print 'no json'
-    '''
+        result = Entrez.read(request)
+    except RuntimeError as e:
+        #FIXME: How generate NAs instead of causing an error with invalid IDs?
+        print "An error occurred while retrieving the annotations."
+        print "The error returned was %s" % e
+        sys.exit(-1)
     
-    url = 'http://research.gene.com/nar/isomorphic/IDACall?isc_rpc=1&isc_v=9.0a&isc_xhr=1'
-    username = 'guptaa22'
-    password = 'Scissor1'
-    p = urllib2.HTTPPasswordMgrWithDefaultRealm()
-
-    p.add_password(None, url, username, password)
-
-    handler = urllib2.HTTPBasicAuthHandler(p)
-    opener = urllib2.build_opener(handler)
-    urllib2.install_opener(opener)
-
-    data = json.load(urllib2.urlopen(url))
-    print data
+    webEnv = result["WebEnv"]
+    queryKey = result["QueryKey"]
+    data = Entrez.esummary(db="gene", webenv=webEnv, query_key =
+                           queryKey)
+    annotations = Entrez.read(data)
     
-    accession = ''
-    r = requests.get('guptaa22:Scissor1@http://research.gene.com/nar',auth=HTTPBasicAuth('guptaa22','Scissor1')).text
-    print r
-	#find tag in html and return accession
-    
-    url = 'guptaa22:Scissor1@http://research.gene.com/nar/'
-    #url = 'google.com'
-    xpath = '//*[@id="isc_O"]/table/tbody/tr/td/table/tbody/tr/td[2]'
-    options = webdriver.ChromeOptions()
-    options.add_experimental_option("excludeSwitches", ["ignore-certificate-errors"])
-    browser = webdriver.Chrome(chrome_options=options)
-    browser.get(url)
-    #time.sleep(1)
-    #button = browser.find_element_by_xpath(xpath)
-    present = False
-    try:
-        try:
-            button = WebDriverWait(browser, 10).until(lambda browser : browser.find_element_by_xpath(xpath))
-            present = True
-        except TimeoutException:
-            print 'button does not exist'
-    except NoSuchElementException:
-        present = False
-    #button = WebDriverWait(browser, 10).until(lambda browser : browser.find_element_by_xpath(xpath))
-    if present == True:
-        button.click()
-    browser.close()
-    return present
-    '''
+    print "Retrieved %d annotations for %d genes" % (len(annotations),
+                                                     len(id_list))
+                                                     
+    return annotations
+
+def print_data(annotations):
+    for gene_data in annotations:
+        print '\n\n\n\n\n\n\n\n'
+        print gene_data
+        #gene_id = gene_data["Id"]
+        #gene_symbol = gene_data["NomenclatureSymbol"]
+        #gene_name = gene_data["Description"]
+        #print "ID: %s - Gene Symbol: %s - Gene Name: %s" % (gene_id, gene_symbol, gene_name)
+'''
+Entrez.email = "aaronkgupta@gmail.com"
+id_list = ['5348','28972','27436']
+annotations = retrieve_annotation(id_list)
+print_data(annotations)
+'''
 # retrieves GenBank data from NCBI website: accession ID, protein seq, and gene name
 def ncbi(accession, filetype): # filetype can be 'gb' or 'fasta'
     Entrez.email = "aaronkgupta@gmail.com"
@@ -168,11 +169,14 @@ def writefile(orf, rnaseq, ids, seqs, symbols,rnas):
 
 
 # TEST CASE
-'''
+
 csv_from_excel('ORF program.xls','ORF','RNAseq','ORF.csv','RNAseq.csv') # turns sheets in separate csvs
 hits, barcodes = get_hits('ORF.csv') # extract hits and barcodes
+print hits
+print barcodes
+print get_dnaids(hits,barcodes)
 # fills input data for writefile()
-
+'''
 ids = []
 seqs = []
 symbols = []
@@ -189,4 +193,4 @@ seqs = ['gg','cc','aa']
 writefile('ORF.csv','RNAseq.csv',ids,seqs,symbols,rnas) # write all gathered data to new xlsx file
 '''
 
-get_id(0,0,0)
+#get_id(0,0,0)

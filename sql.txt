@@ -1,0 +1,5 @@
+SELECT labwarebarcode, xposition, yposition, dnaid, geneid, unqid
+FROM bio_mosaic.vw_invgen_sample m
+     JOIN sst.v_biologics_full_cdna s on
+     m.lot_name = s.lot_name
+where labwarebarcode = 'NR0001980';
